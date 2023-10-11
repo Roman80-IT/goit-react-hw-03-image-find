@@ -1,97 +1,100 @@
-import React, { Component } from 'react';
-import { nanoid } from 'nanoid';
+import { Component } from 'react';
 
-import { Filter } from './Filter/Filter';
-import { ContactForm } from './ContactForm/ContactForm';
-import { ContactList } from './ContactList/ContactList';
+import { PER_PAGE, getImages } from './services/api';
 
 import { GlobalStyle } from './GlobalStyle';
-import { Layout } from './Layout';
+import { ImageGallery } from './ImageGallery/ImageGallery';
+import { Searchbar } from './Searchbar/Searchbar';
+import { Button } from './Button/Button';
+import { Layout } from './Layout/Layout.styled';
+import { Modal } from './Modal/Modal';
+import { Message } from './Message/Message';
+import { Loader } from './Loader/Loader';
 
 export class App extends Component {
   state = {
-    contacts: [],
-    filter: '',
+    query: '',
+    image: [],
+    totalImage: 0,
+    page: 1,
+    selectedImageUrl: '',
+    load: false,
+    error: false,
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.contacts !== prevState.contacts) {
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
+  async componentDidUpdate(_, prevState) {
+    if (
+      prevState.query !== this.state.query ||
+      prevState.page !== this.state.page
+    ) {
+      try {
+        this.setState({ load: true, error: false });
+        const responce = await getImages(this.state.query, this.state.page);
+        this.setState({
+          image: [...this.state.image, ...responce.data.hits],
+          totalImage: responce.data.totalHits,
+        });
+      } catch {
+        this.setState({ error: true });
+      } finally {
+        this.setState({ load: false });
+      }
     }
   }
 
-  componentDidMount() {
-    const savedContacts = localStorage.getItem('contacts');
-    if (savedContacts) {
-      this.setState({ contacts: JSON.parse(savedContacts) });
-    }
-  }
-
-  handleFilterChange = event => {
-    this.setState({ filter: event.target.value });
-  };
-
-  handleAddContact = (name, number) => {
-    const { contacts } = this.state;
-
-    const isNameExist = contacts.some(contact => contact.name === name);
-
-    if (isNameExist) {
-      alert(`${name} is already in contacts.`);
-      return;
-    }
-
-    if (name.trim() === '' || number.trim() === '') {
-      alert('Name and phone number are required fields.');
-      return;
-    }
-
-    const newContact = {
-      name,
-      number,
-      id: nanoid(),
-    };
-
+  getQuery = e => {
+    e.preventDefault();
     this.setState({
-      contacts: [...contacts, newContact],
+      query: `${Date.now()}/${e.target.elements.query.value}`,
+      page: 1,
+      image: [],
+      totalImage: 0,
     });
   };
 
-  getFilteredContacts = () => {
-    const { contacts, filter } = this.state;
-    return contacts.filter(contact =>
-      contact.name.toLowerCase().includes(filter.toLowerCase())
-    );
+  onBtnClick = () => {
+    this.setState(prevState => ({ page: prevState.page + 1 }));
   };
 
-  handleDeleteContact = id => {
-    const { contacts } = this.state;
-    const updatedContacts = contacts.filter(contact => contact.id !== id);
-    this.setState({ contacts: updatedContacts });
+  getImageForModal = url => {
+    this.setState({ selectedImageUrl: url });
+  };
+
+  onModalClose = () => {
+    this.setState({ selectedImageUrl: '' });
   };
 
   render() {
-    const { contacts, filter } = this.state;
-
     return (
       <Layout>
-        <h1>Phonebook</h1>
+        <Searchbar onSubmit={this.getQuery}></Searchbar>
+        {this.state.image.length !== 0 && (
+          <ImageGallery
+            image={this.state.image}
+            onImageClick={this.getImageForModal}
+          ></ImageGallery>
+        )}
 
-        {/* Компонент ContactForm для форми додавання контактів */}
-        <ContactForm
-          onAddContact={this.handleAddContact}
-          contacts={contacts} // Передаємо список контактів у ContactForm (крок 5)
-        />
+        {this.state.load && <Loader></Loader>}
 
-        <h2>Contacts</h2>
+        {this.state.image.length !== 0 &&
+          this.state.totalImage > PER_PAGE * this.state.page && (
+            <Button onClick={this.onBtnClick}></Button>
+          )}
 
-        <Filter filter={filter} onFilterChange={this.handleFilterChange} />
-
-        {/* Компонент ContactList для списку контактів */}
-        <ContactList
-          contacts={this.getFilteredContacts()}
-          onDeleteContact={this.handleDeleteContact} // Передаємо ф-цію для видалення контакту
-        />
+        <Message
+          error={this.state.error}
+          empty={
+            this.state.image.length === 0 &&
+            this.state.query !== '' &&
+            !this.state.load
+          }
+        ></Message>
+        <Modal
+          url={this.state.selectedImageUrl}
+          query={this.state.query}
+          onModalClose={this.onModalClose}
+        ></Modal>
         <GlobalStyle></GlobalStyle>
       </Layout>
     );
