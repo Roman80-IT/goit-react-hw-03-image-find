@@ -20,71 +20,27 @@ export class App extends Component {
     selectedImageUrl: '',
     load: false,
     error: false,
-    loadMore: true,
   };
 
-  // async componentDidUpdate(_, prevState) {
-  //   if (
-  //     prevState.query !== this.state.query ||
-  //     prevState.page !== this.state.page
-  //   ) {
-  //     try {
-  //       this.setState({ load: true, error: false });
-  //       const responce = await getImages(this.state.query, this.state.page);
-  //       this.setState({
-  //         image: [...this.state.image, ...responce.data.hits],
-  //         totalImage: responce.data.totalHits,
-  //       });
-  //     } catch {
-  //       this.setState({ error: true });
-  //     } finally {
-  //       this.setState({ load: false });
-  //     }
-  //   }
-  // }
-
-  componentDidUpdate(_, prevState) {
+  async componentDidUpdate(_, prevState) {
     if (
       prevState.query !== this.state.query ||
       prevState.page !== this.state.page
     ) {
-      this.fetchImages();
+      try {
+        this.setState({ load: true, error: false });
+        const responce = await getImages(this.state.query, this.state.page);
+        this.setState({
+          image: [...this.state.image, ...responce.data.hits],
+          totalImage: responce.data.totalHits,
+        });
+      } catch {
+        this.setState({ error: true });
+      } finally {
+        this.setState({ load: false });
+      }
     }
   }
-
-  fetchImages = async () => {
-    try {
-      this.setState({ load: true, error: false });
-
-      const response = await getImages(this.state.query, this.state.page);
-
-      // this.setState({
-      //   image: [...this.state.image, ...responce.data.hits],
-      //   totalImage: responce.data.totalHits,
-      // });
-
-      // this.setState(prev => ({
-      //   image: [...prev.image, ...hits],
-      //   totalImage: this.state.page < Math.ceil(totalHits / 12),
-      // }));
-
-      this.setState(prevState => ({
-        image: [...prevState.image, ...response.data.hits],
-        totalImage: response.data.totalHits,
-        loadMore:
-          this.state.page < Math.ceil(response.data.totalHits / PER_PAGE),
-      }));
-
-      // this.setState(prevState => ({
-      //   image: [...prevState.images, ...response.data.hits],
-      //   totalImage: response.data.totalHits,
-    } catch (error) {
-      // this.setState({ error: true });
-      this.setState({ error: error.message });
-    } finally {
-      this.setState({ load: false });
-    }
-  };
 
   getQuery = e => {
     e.preventDefault();

@@ -20,28 +20,7 @@ export class App extends Component {
     selectedImageUrl: '',
     load: false,
     error: false,
-    loadMore: true,
   };
-
-  // async componentDidUpdate(_, prevState) {
-  //   if (
-  //     prevState.query !== this.state.query ||
-  //     prevState.page !== this.state.page
-  //   ) {
-  //     try {
-  //       this.setState({ load: true, error: false });
-  //       const responce = await getImages(this.state.query, this.state.page);
-  //       this.setState({
-  //         image: [...this.state.image, ...responce.data.hits],
-  //         totalImage: responce.data.totalHits,
-  //       });
-  //     } catch {
-  //       this.setState({ error: true });
-  //     } finally {
-  //       this.setState({ load: false });
-  //     }
-  //   }
-  // }
 
   componentDidUpdate(_, prevState) {
     if (
@@ -49,40 +28,42 @@ export class App extends Component {
       prevState.page !== this.state.page
     ) {
       this.fetchImages();
+      //     try {
+      //       this.setState({ load: true, error: false });
+      //       const responce = await getImages(this.state.query, this.state.page);
+      //       this.setState({
+      //         image: [...this.state.image, ...responce.data.hits],
+      //         totalImage: responce.data.totalHits,
+      //       });
+      //     } catch {
+      //       this.setState({ error: true });
+      //     } finally {
+      //       this.setState({ load: false });
+      //     }
     }
   }
 
   fetchImages = async () => {
+    // const { query, page } = this.state;
+
     try {
-      this.setState({ load: true, error: false });
+      this.setState({ loading: true, error: false });
 
       const response = await getImages(this.state.query, this.state.page);
 
-      // this.setState({
-      //   image: [...this.state.image, ...responce.data.hits],
-      //   totalImage: responce.data.totalHits,
-      // });
-
-      // this.setState(prev => ({
-      //   image: [...prev.image, ...hits],
-      //   totalImage: this.state.page < Math.ceil(totalHits / 12),
-      // }));
+      //   await axios.get(
+      //   `${BASE_URL}?key=${API_KEY}&q=${query}&per_page=${PER_PAGE}&page=${page}`
+      // );
 
       this.setState(prevState => ({
-        image: [...prevState.image, ...response.data.hits],
-        totalImage: response.data.totalHits,
-        loadMore:
-          this.state.page < Math.ceil(response.data.totalHits / PER_PAGE),
+        images: [...prevState.images, ...response.data.hits],
+        totalImages: response.data.totalHits,
       }));
-
-      // this.setState(prevState => ({
-      //   image: [...prevState.images, ...response.data.hits],
-      //   totalImage: response.data.totalHits,
     } catch (error) {
-      // this.setState({ error: true });
-      this.setState({ error: error.message });
+      this.setState({ error: true });
+      // this.setState({ error: error.message });
     } finally {
-      this.setState({ load: false });
+      this.setState({ loading: false });
     }
   };
 
@@ -109,10 +90,12 @@ export class App extends Component {
   };
 
   render() {
+    const showImg = Array.isArray(this.state.image) && this.state.image.length;
+
     return (
       <Layout>
         <Searchbar onSubmit={this.getQuery}></Searchbar>
-        {this.state.image.length !== 0 && (
+        {showImg && (
           <ImageGallery
             image={this.state.image}
             onImageClick={this.getImageForModal}
@@ -121,10 +104,9 @@ export class App extends Component {
 
         {this.state.load && <Loader></Loader>}
 
-        {this.state.image.length !== 0 &&
-          this.state.totalImage > PER_PAGE * this.state.page && (
-            <Button onClick={this.onBtnClick}></Button>
-          )}
+        {showImg && this.state.totalImage > PER_PAGE * this.state.page && (
+          <Button onClick={this.onBtnClick}></Button>
+        )}
 
         <Message
           error={this.state.error}

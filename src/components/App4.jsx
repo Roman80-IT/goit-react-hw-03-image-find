@@ -58,26 +58,12 @@ export class App extends Component {
 
       const response = await getImages(this.state.query, this.state.page);
 
-      // this.setState({
-      //   image: [...this.state.image, ...responce.data.hits],
-      //   totalImage: responce.data.totalHits,
-      // });
-
-      // this.setState(prev => ({
-      //   image: [...prev.image, ...hits],
-      //   totalImage: this.state.page < Math.ceil(totalHits / 12),
-      // }));
-
       this.setState(prevState => ({
         image: [...prevState.image, ...response.data.hits],
         totalImage: response.data.totalHits,
         loadMore:
           this.state.page < Math.ceil(response.data.totalHits / PER_PAGE),
       }));
-
-      // this.setState(prevState => ({
-      //   image: [...prevState.images, ...response.data.hits],
-      //   totalImage: response.data.totalHits,
     } catch (error) {
       // this.setState({ error: true });
       this.setState({ error: error.message });
@@ -88,12 +74,16 @@ export class App extends Component {
 
   getQuery = e => {
     e.preventDefault();
+
+    const searchedImages = e.currentTarget.elements.query.value;
+
     this.setState({
-      query: `${Date.now()}/${e.target.elements.query.value}`,
+      query: `${Date.now()}/${searchedImages}`,
       page: 1,
       image: [],
       totalImage: 0,
     });
+    e.currentTarget.reset();
   };
 
   onBtnClick = () => {
@@ -121,10 +111,14 @@ export class App extends Component {
 
         {this.state.load && <Loader></Loader>}
 
-        {this.state.image.length !== 0 &&
+        {/* {this.state.image.length !== 0 &&
           this.state.totalImage > PER_PAGE * this.state.page && (
             <Button onClick={this.onBtnClick}></Button>
-          )}
+          )} */}
+
+        {this.state.image.length !== 0 && this.state.loadMore && (
+          <Button onClick={this.onBtnClick}></Button>
+        )}
 
         <Message
           error={this.state.error}
